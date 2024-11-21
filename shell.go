@@ -8,10 +8,12 @@ import (
 )
 
 type Shell struct {
-	currentDir string
+	currentDir      string
+	commandRegistry map[string]Command
 }
 
 func (s *Shell) Start() {
+	s.RegisterCommands()
 	for {
 		fmt.Printf("%s> ", s.currentDir)
 		input := s.readInput()
@@ -27,48 +29,24 @@ func (s *Shell) readInput() string {
 	return strings.TrimSpace(input)
 }
 
+func (s *Shell) RegisterCommands() {
+	s.commandRegistry = map[string]Command{
+		"cd":   &CdCommand{currentDir: &s.currentDir},
+		"pwd":  CommandFunc(cmdPwd),
+		"exit": CommandFunc(cmdExit),
+	}
+}
+
 func (s *Shell) executeCommand(input string) error {
 
 	if len(input) == 0 {
 		return nil
 	}
-
 	args := strings.Split(input, " ")
-	switch args[0] {
-	case "cd":
-		return s.changeDirectory(args[1:])
-	case "pwd":
-		return s.printWorkingDirectory()
-	case "exit":
-		return s.exitShell()
-	default:
-		return s.runExternalCommand(args)
+	if cmd, exists := s.commandRegistry[args[0]]; exists {
+		return cmd.Execute(args[1:])
 	}
-}
-
-func (s *Shell) changeDirectory(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("cd: no directory specified")
-	}
-	input := strings.Join(args, " ")
-
-	if err := os.Chdir(input); err != nil {
-		return err
-	}
-
-	dir, _ := os.Getwd()
-	s.currentDir = dir
-
-	return nil
-}
-
-func (s *Shell) printWorkingDirectory() error {
-	fmt.Println(s.currentDir)
-	return nil
-}
-
-func (s *Shell) exitShell() error {
-	os.Exit(0)
+	s.runExternalCommand(args)
 	return nil
 }
 
