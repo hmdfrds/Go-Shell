@@ -3,7 +3,7 @@ package shell
 import (
 	"bufio"
 	"fmt"
-	"go-shell/util/color"
+
 	"os"
 	"strings"
 )
@@ -16,10 +16,15 @@ type Shell struct {
 func (s *Shell) Start() {
 	s.RegisterCommands()
 	for {
-		fmt.Printf("%s"+color.YellowText("> "), s.CurrentDir)
+		fmt.Printf("%s> ", s.CurrentDir)
 		input := s.readInput()
-		if err := s.executeCommand(input); err != nil {
-			fmt.Println(color.RedText("Error")+": ", err)
+
+		output, err := s.executeCommand(input)
+		if err != nil {
+			fmt.Println("Error: ", err)
+		}
+		if len(output) > 0 {
+			println(output)
 		}
 	}
 }
@@ -39,20 +44,18 @@ func (s *Shell) RegisterCommands() {
 	}
 }
 
-func (s *Shell) executeCommand(input string) error {
+func (s *Shell) executeCommand(input string) (string, error) {
 
 	if len(input) == 0 {
-		return nil
+		return NoOutput, nil
 	}
 	args := strings.Split(input, " ")
 	if cmd, exists := s.commandRegistry[args[0]]; exists {
 		return cmd.Execute(args[1:])
 	}
-	s.runExternalCommand(args)
-	return nil
+	return s.runExternalCommand(args)
 }
 
-func (s *Shell) runExternalCommand(args []string) error {
-	fmt.Println(args)
-	return nil
+func (s *Shell) runExternalCommand(args []string) (string, error) {
+	return cmdExe(args)
 }

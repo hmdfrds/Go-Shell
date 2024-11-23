@@ -3,70 +3,73 @@ package shell
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"slices"
 	"strings"
 )
 
+const NoOutput = ""
+
 type Command interface {
-	Execute(args []string) error
+	Execute(args []string) (string, error)
 }
 
 type CdCommand struct {
 	currentDir *string
 }
 
-type CommandFunc func(args []string) error
+type CommandFunc func(args []string) (string, error)
 
-func (f CommandFunc) Execute(args []string) error {
+func (f CommandFunc) Execute(args []string) (string, error) {
 	return f(args)
 }
 
-func (c *CdCommand) Execute(args []string) error {
+func (c *CdCommand) Execute(args []string) (string, error) {
 	if len(args) == 0 {
-		return fmt.Errorf("cd: no directory specified")
+		return NoOutput, fmt.Errorf("cd: no directory specified")
 	}
 	input := strings.Join(args, " ")
 
 	if err := os.Chdir(input); err != nil {
-		return err
+		return NoOutput, err
 	}
 
 	dir, _ := os.Getwd()
 	*c.currentDir = dir
 
-	return nil
+	return NoOutput, nil
 }
 
-func cmdPwd(args []string) error {
+func cmdPwd(args []string) (string, error) {
 
 	currentDir, err := os.Getwd()
 
 	if err != nil {
-		return err
+		return NoOutput, err
 	}
 
 	fmt.Println(currentDir)
-	return nil
+	return NoOutput, nil
 }
 
-func cmdExit(args []string) error {
+func cmdExit(args []string) (string, error) {
 	os.Exit(0)
-	return nil
+	return NoOutput, nil
 }
 
-func cmdLs(args []string) error {
+func cmdLs(args []string) (string, error) {
 	currentDir, err := os.Getwd()
 
 	if err != nil {
-		return err
+		return NoOutput, err
 	}
 
 	dirList, err := os.ReadDir(currentDir)
 	if err != nil {
-		return err
+		return NoOutput, err
 	}
 
-	showHidden := argsContain(args, "-a")
-
+	showHidden := slices.Contains(args, "-a")
 	for _, dir := range dirList {
 		if !showHidden && strings.HasPrefix(dir.Name(), ".") {
 			continue
@@ -79,14 +82,12 @@ func cmdLs(args []string) error {
 		}
 
 	}
-	return nil
+	return NoOutput, nil
 }
 
-func argsContain(args []string, value string) bool {
-	for _, arg := range args {
-		if arg == value {
-			return true
-		}
-	}
-	return false
+func cmdExe(args []string) (string, error) {
+	cmd := exec.Command(args[0], args[1:]...)
+	stdoutStderr, err := cmd.CombinedOutput()
+	return string(stdoutStderr), err
+
 }
