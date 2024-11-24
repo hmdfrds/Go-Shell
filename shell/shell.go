@@ -1,10 +1,8 @@
 package shell
 
 import (
-	"bufio"
 	"fmt"
 
-	"os"
 	"strings"
 )
 
@@ -14,7 +12,6 @@ type Shell struct {
 }
 
 func (s *Shell) Start() {
-	s.RegisterCommands()
 	for {
 		fmt.Printf("%s> ", s.CurrentDir)
 		input := s.readInput()
@@ -27,12 +24,6 @@ func (s *Shell) Start() {
 			println(output)
 		}
 	}
-}
-
-func (s *Shell) readInput() string {
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	return strings.TrimSpace(input)
 }
 
 func (s *Shell) RegisterCommands() {
