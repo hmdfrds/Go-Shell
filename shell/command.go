@@ -28,28 +28,20 @@ func (c *CdCommand) Execute(args []string) (string, error) {
 	if len(args) == 0 {
 		return NoOutput, fmt.Errorf("cd: no directory specified")
 	}
-	input := strings.Join(args, " ")
-
-	if err := os.Chdir(input); err != nil {
+	if err := os.Chdir(args[0]); err != nil {
 		return NoOutput, err
 	}
-
 	dir, _ := os.Getwd()
 	*c.currentDir = dir
-
 	return NoOutput, nil
 }
 
 func cmdPwd(args []string) (string, error) {
-
 	currentDir, err := os.Getwd()
-
 	if err != nil {
 		return NoOutput, err
 	}
-
-	fmt.Println(currentDir)
-	return NoOutput, nil
+	return currentDir, nil
 }
 
 func cmdExit(args []string) (string, error) {
@@ -70,24 +62,26 @@ func cmdLs(args []string) (string, error) {
 	}
 
 	showHidden := slices.Contains(args, "-a")
+	var result strings.Builder
 	for _, dir := range dirList {
 		if !showHidden && strings.HasPrefix(dir.Name(), ".") {
 			continue
 		}
-
 		if dir.IsDir() {
-			fmt.Println(dir.Name() + "/")
+			result.WriteString(dir.Name() + "/\n")
 		} else {
-			fmt.Println(dir.Name())
+			result.WriteString(dir.Name() + "\n")
 		}
-
 	}
-	return NoOutput, nil
+	return result.String(), nil
 }
 
 func cmdExe(args []string) (string, error) {
 	cmd := exec.Command(args[0], args[1:]...)
 	stdoutStderr, err := cmd.CombinedOutput()
 	return string(stdoutStderr), err
+}
 
+func cmdEcho(args []string) (string, error) {
+	return strings.Join(args, " "), nil
 }

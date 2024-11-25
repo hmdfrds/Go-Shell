@@ -17,7 +17,7 @@ func main() {
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	currentDir, _ := os.Getwd()
-	shell := shell.Shell{CurrentDir: currentDir}
+	shell := shell.NewShell(currentDir)
 	shell.RegisterCommands()
 	shell.Start()
 }
